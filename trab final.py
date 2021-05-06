@@ -1,72 +1,95 @@
+import copy
 
-class Grafo:
-    def __init__(self):
-        self.lista_vizinhos = {}
-        self.lista_vertices = {}
-    
-    def add_vertice(self, vertice):
-        self.lista_vertices[vertice] = True
-    
-    def add_aresta(self, qa, qb, palavra):
-    	#se nao existe estado qa nao add
-        if not qa in self.lista_vizinhos:
-            self.lista_vizinhos[qa] = []
-        #add qb e w como uma transicao de qa
-        self.lista_vizinhos[qa].append([palavra,qb])
-    
-    def transicoes(self, qa):
-        if qa in self.lista_vizinhos:
-        	#retorna as transicoes de um estado qa
-            return self.lista_vizinhos[qa]
-        else:
-            return []
-    
-    def estados(self):
-        return self.lista_vertices.keys()
+def processString(afd, string):
+    """
+    Verifies if w is accepted by afd
+    """
+    count = 0
+    w_new = [initial]
 
-    def deleta_aresta(self, vertice, outro_vertice):
-        self.vizinhos(vertice).remove(outro_vertice)
-    
-    def deleta_vertice(self, vertice):
-        for outro_vertice in self.lista_vizinhos[vertice]:
-            self.deleta_aresta(vertice, outro_vertice)
-        del self.lista_vizinhos[vertice]
-        del self.lista_vertices[vertice]
-        
+    while w_new:
+        value = w_new.pop(0)
+        state = afd[value]
+        if count >= len(string):
+            if value in final:
+                return True
+            return False
+        for transition in afd[value]:
+            if string[count] == transition:
+                print("from ", value, " to ", afd[value][transition], " with ", transition)
+                w_new.append(afd[value][transition])
+            elif string[count] not in afd[value]:
+                print("from ", value, " to sink state with ", string[count])
+        count += 1
+    return False
 
-
-def aceita_W(w,Grafo):
-
-    w = w.split(",")#entrada da palavra separada por virgula
-    invalido=False
-    estadoAtual = estadoI
-    resp = True
-    caminho=[('Inicio',estadoAtual)]
-    for i in w:
-        proximo_estado = False
-        t = Grafo.transicoes(estadoAtual)
-        for j in Grafo.transicoes(estadoAtual):
-            if i == j[0]:
-                proximo_estado = True
-                estadoAtual = j[1]
-                caminho.append((i,estadoAtual))
-        if proximo_estado == False:
-            resp = False
-            invalido=True
-            break
+def changeName(afd, state, new_state):
+    """
+       Function to rename afd states while minimizing
+         """
+    #For every state in DFA
+    for element in afd:
+        #For every transition
+        for letter in afd[element]:
+            #If the state we are renaming is a result from any transition, change its name to the new state
+            if state == afd[element][letter]:
+                afd[element].update({letter : new_state})
 
 
-    for e in estadoF:
-        if e == estadoAtual:
-            resp = True 
+def minimize(afd):
+    """
+           Function to minimize a DFA
 
-    if resp == False or invalido:
-        return False,caminho
-    else:
-        return True,caminho
+             """
+    #Initialize deleted list, the minimized DFA and changed flag
+    deleted = []
+    min_dfa = copy.deepcopy(afd)
+    changed = True
+    # compare two states,if they have the same transitions, they have not been deleted
+    # and they are both final or non final, delete them from min_dfa then
+    # add them to the deleted list and rename any transitions with the deleted state to the new state
+    while(changed):
+        changed = False
+        for one_state in afd:
+            for another_state in afd:
+                if one_state != another_state:
+                    if one_state in min_dfa and another_state in min_dfa:
+                        if min_dfa[one_state] == min_dfa[another_state]:
+                            if another_state in min_dfa and another_state not in deleted:
+                                if (another_state in final and one_state in final) or (another_state not in final and one_state not in final):
 
 
-# ============Leitura do arquivo================
+                                    deleted.append(another_state)
+                                    deleted.append(one_state)
+                                    changed = True
+                                    #Check if one of the states is initial, in order to avoid its deletion
+                                    if one_state in initial:
+                                        print("state to delete: ", another_state)
+                                        del min_dfa[another_state]
+                                        changeName(min_dfa, another_state, one_state)
+                                        if another_state in final:
+                                            final.remove(another_state)
+                                    elif another_state in initial:
+                                        print("state to delete: ", one_state)
+                                        if one_state in final:
+                                            final.remove(one_state)
+                                        del min_dfa[one_state]
+                                        changeName(min_dfa, one_state, another_state)
+                                    else:
+                                        print("state to delete: ", another_state)
+                                        if another_state in final:
+                                            final.remove(another_state)
+                                        del min_dfa[another_state]
+                                        changeName(min_dfa, another_state, one_state)
+
+    return min_dfa
+
+
+
+
+
+
+#Extract all of the states, alphabet, initial states and final states from the file
 file = open("arquivodeentrada.txt", "r")
 words = []
 transitions = []
@@ -75,78 +98,66 @@ for i in file:
     for word in i.split():
         words.append(word)
 
-#Organização do arquivo
-AFD = words[0]
-AFD_aux = AFD.split("{")
-estados = AFD_aux[1].split(',')
-estados.pop()
-estados[len(estados)-1]=estados[len(estados)-1].replace("}","")
+#Process Arquive
+afd_string = words[0]
+afd_aux = afd_string.split("{")
+states = afd_aux[1].split(',')
+states.pop()
+states[len(states)-1]=states[len(states)-1].replace("}","")
+alphabet_sym = afd_aux[2].split('}')
+alphabet_sym= alphabet_sym[0].split(',')
 
+initial = afd_aux[2].split('}')[1]
+initial = initial.replace(",","")
 
-palavras = AFD_aux[2].split('}')
-palavras= palavras[0].split(',')
-
-
-
-estadoI = AFD_aux[2].split('}')[1]
-estadoI = estadoI.replace(",","")
-
-estadoF = AFD_aux[3].split(',')
-estadoF[len(estadoF)-1]= estadoF[len(estadoF)-1].replace("})","")
+final = afd_aux[3].split(',')
+final[len(final)-1]= final[len(final)-1].replace("})","")
 
 for i in range (2, len(words)):
     transitions.append(words [i])
 
-Grafo = Grafo()
-#============Criando AFD=======================
+#============afd creation======================
 
-#adiciona os estados no Grafo_M
-for i in range (0, len(estados)):
-	Grafo.add_vertice(estados[i])
-
-#add transicoes no Grafo_M (qa -> qb)
+#For each remaining line in the file, get the transition, and the states involved in the transition
+afd = dict(dict())
 for i in range (0, len(transitions)):
-	#quebra a string -> aux[0] = (qa,w) e aux[1] = qb
-	aux = transitions[i].split("=")
-	#retira parenteses
-	aux[0] = aux[0][1:]
-	aux[0] = aux[0][:-1]
-	#quebra a string em qa e w
-	aux[0] = aux[0].split(",")
-	#add transicao
-	Grafo.add_aresta(aux[0][0],aux[1],aux[0][1])
-	
-#AFD
-print ("AFD: ",AFD)
-print ("Estados: ",estados)
-print ("Palvras: ",palavras)
-print ("Estado inicial: ",estadoI)
-print ("Estados finais: ",estadoF)
-print ("Transicoes:",transitions)
-print ("")
-print ("")
 
 
-# ==========Criando AFD Minimo============================
+    aux = transitions[i].split("=")
+    aux[0] = aux[0][1:]
+    aux[0] = aux[0][:-1]
+    aux[0] = aux[0].split(",")
 
+    state0 = aux[0][0]
+    letter = aux[0][1]
+    for_state = aux[1]
 
+    #If the original state already has a transition in the afd, add the new transition to it,
+    # otherwise create the new state and its first transition
+    if state0 in afd:
+        afd[state0].update({letter: for_state})
+    else:
+        afd[state0] = {letter: for_state}
+    
 
+#original afd
+print()
+print("Original afd")
+print(afd)
+min_dfa = minimize(afd)
+#minimized afd
+print("Minimized afd")
+print(min_dfa)
 
+print("Final states ", final)
+print("Initial state ", initial)
 
-
-
-
-
-
-print ("Digite 0 para verificar se uma palavra é aceita")
-menu=input("Digite 1 para verificar se um par de palavras sao ambos aceitos: ")
+menu=input("Digite 0 para verificar se uma palavra é aceita e 1 para verificar se um par de palavras sao ambos aceitos: ")
 cont='s'
 if int(menu)==0:
     while(cont == 's' or cont == 'S'):
-        a = input("Digite a palavra : ")
-        resp=aceita_W(a,Grafo)
-        if resp[0]:
-            print(resp[1])
+        string = input("Digite a palavra : ")
+        if processString(min_dfa, string):
             print('palavra aceita')
         else:
             print('palavra rejeitada')
@@ -156,10 +167,10 @@ if int(menu)==0:
 elif int(menu)==1:
     while(cont == 's' or cont == 'S'):
         pares_aceitos=[]
-        a = input("Digite a primeira palavra: ")
-        a1 = input("Digite a segunda palavra: ")
-        if(aceita_W(a,Grafo)[0] and aceita_W(a1,Grafo)[0]):
-            pares_aceitos.append((a,a1))
+        string = input("Digite a primeira palavra: ")
+        string2= input("Digite a segunda palavra: ")
+        if(processString(min_dfa, string) and processString(min_dfa, string2)):
+            pares_aceitos.append((string,string2))
         cont = input("\nDeseja inserir uma nova palavra(S/N): ")
         print("\n")
     print('pares aceitos: ', pares_aceitos) 
