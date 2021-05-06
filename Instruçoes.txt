@@ -1,0 +1,7 @@
+Apenas importado o copy.
+Programa pode ser rodado pelo exe "trab final.exe"
+
+Contém alteraçoes feitas na documentaçao da parte 1, presente no rar.
+-Simplificações do alfabeto, agora todos com 1 letra.
+-retirada do q6(Encerrar), pois é desnecessario
+-guilherme desistiu da cadeira            

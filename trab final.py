@@ -7,11 +7,12 @@ def processString(afd, string):
     """
     count = 0
     w_new = [initial]
+    tam=len(string)
 
     while w_new:
         value = w_new.pop(0)
         state = afd[value]
-        if count >= len(string):
+        if count >= tam:
             if value in final:
                 return True
             return False
@@ -19,12 +20,10 @@ def processString(afd, string):
             if string[count] == transition:
                 print("from ", value, " to ", afd[value][transition], " with ", transition)
                 w_new.append(afd[value][transition])
-            elif string[count] not in afd[value]:
-                print("from ", value, " to sink state with ", string[count])
         count += 1
     return False
 
-def changeName(afd, state, new_state):
+def renameState(afd, state, new_state):
     """
        Function to rename afd states while minimizing
          """
@@ -42,46 +41,46 @@ def minimize(afd):
            Function to minimize a DFA
 
              """
-    #Initialize deleted list, the minimized DFA and changed flag
-    deleted = []
+    #Initialize del_list list, the minimized DFA and changed flag
+    del_list = []
     min_afd = copy.deepcopy(afd)
     changed = True
-    # compare two states,if they have the same transitions, they have not been deleted
+    # compare two states,if they have the same transitions, they have not been del_list
     # and they are both final or non final, delete them from min_afd then
-    # add them to the deleted list and rename any transitions with the deleted state to the new state
+    # add them to the del_list list and rename any transitions with the del_list state to the new state
     while(changed):
         changed = False
-        for one_state in afd:
-            for another_state in afd:
-                if one_state != another_state:
-                    if one_state in min_afd and another_state in min_afd:
-                        if min_afd[one_state] == min_afd[another_state]:
-                            if another_state in min_afd and another_state not in deleted:
-                                if (another_state in final and one_state in final) or (another_state not in final and one_state not in final):
+        for state1 in afd:
+            for state2 in afd:
+                if state1 != state2:
+                    if state1 in min_afd and state2 in min_afd:
+                        if min_afd[state1] == min_afd[state2]:
+                            if state2 in min_afd and state2 not in del_list:
+                                if (state2 in final and state1 in final) or (state2 not in final and state1 not in final):
 
 
-                                    deleted.append(another_state)
-                                    deleted.append(one_state)
+                                    del_list.append(state2)
+                                    del_list.append(state1)
                                     changed = True
                                     #Check if one of the states is initial, in order to avoid its deletion
-                                    if one_state in initial:
-                                        print("state to delete: ", another_state)
-                                        del min_afd[another_state]
-                                        changeName(min_afd, another_state, one_state)
-                                        if another_state in final:
-                                            final.remove(another_state)
-                                    elif another_state in initial:
-                                        print("state to delete: ", one_state)
-                                        if one_state in final:
-                                            final.remove(one_state)
-                                        del min_afd[one_state]
-                                        changeName(min_afd, one_state, another_state)
+                                    if state1 in initial:
+                                        print("state to delete: ", state2)
+                                        del min_afd[state2]
+                                        renameState(min_afd, state2, state1)
+                                        if state2 in final:
+                                            final.remove(state2)
+                                    elif state2 in initial:
+                                        print("state to delete: ", state1)
+                                        if state1 in final:
+                                            final.remove(state1)
+                                        del min_afd[state1]
+                                        renameState(min_afd, state1, state2)
                                     else:
-                                        print("state to delete: ", another_state)
-                                        if another_state in final:
-                                            final.remove(another_state)
-                                        del min_afd[another_state]
-                                        changeName(min_afd, another_state, one_state)
+                                        print("state to delete: ", state2)
+                                        if state2 in final:
+                                            final.remove(state2)
+                                        del min_afd[state2]
+                                        renameState(min_afd, state2, state1)
 
     return min_afd
 
